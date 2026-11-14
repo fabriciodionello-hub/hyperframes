@@ -17,19 +17,8 @@ import { clamp, lerp, inv, ramp, smooth, ease, track, pulse, noise1, hash1, TAU 
 const DEG = Math.PI / 180;
 const v3 = (a) => new THREE.Vector3(a[0], a[1], a[2]);
 
-// ---------------------------------------------------------------- beats (film seconds)
-const FADE_OUT = [10.8, 11.05];
-const B2 = 11.12; // SALA 2 (after the fade)
-const B3 = S(23) - 0.11; // corridor, yellow
-const B4 = S(35) - 0.12; // ambulance
-const SHOCK1 = S(11) + 0.3;
-const SHOCK2 = S(14) + 0.42;
-const PULSE_BACK = S(18) + 0.1; // the first beat on the monitor
-const GLOVE_OFF = S(22) + 0.75;
-const RED_WINDOW = S(31) - 0.3; // the light outside the station window
-const DOOR_PUSH = S(45) + 0.05;
-const RED_STOPS = S(56) + 0.1; // "o giroflex para"
-const FREEZE = CARD_AT; // the picture holds under the end card
+// the beats themselves live in beats.js, shared with the sound build
+import { FADE_OUT, DOORS_HIT, B2, B3, B4, SHOCK1, SHOCK2, PULSE_BACK, GLOVE_OFF, RED_WINDOW, RED_RATE, DOOR_PUSH, RED_STOPS, FREEZE, HEART } from "./beats.js";
 
 /** How loud the narrator is at film time t (0..1): drives mouths and the radio lamp. */
 function voice(t) {
@@ -459,7 +448,7 @@ export function createDirector({ engine, kit, scene, world, outside, cast, pov }
     // ---- the red light outside: station window (block 3), back door glass (4), the alley (5) ----
     const redOn = t >= RED_WINDOW && t < RED_STOPS + 0.5;
     if (redOn) {
-      const beat = 0.5 + 0.5 * Math.sin((t - RED_WINDOW) * TAU * 0.78 - Math.PI / 2);
+      const beat = 0.5 + 0.5 * Math.sin((t - RED_WINDOW) * TAU * RED_RATE - Math.PI / 2);
       const k = smooth(beat) * ramp(RED_WINDOW, RED_WINDOW + 0.35, t) * (1 - ramp(RED_STOPS, RED_STOPS + 0.5, t));
       outside.tailM.uniforms.uGlow.value = 0.2 + 1.0 * k;
       outside.puddleGlow.uniforms.uGlow.value = 0.85 * k;
@@ -563,21 +552,11 @@ export function createDirector({ engine, kit, scene, world, outside, cast, pov }
     st.position.set(sx, 0.012 * run * Math.abs(Math.sin(t * TAU * 6.5)), sz);
     st.rotation.set(0.006 * run * Math.sin(t * TAU * 5.3), Math.PI + 0.02 * run * Math.sin(t * TAU * 1.5), 0.012 * run * Math.sin(t * TAU * 4.1));
     // the doors fly open when the stretcher hits them
-    world.setSala2Doors(ease.outBack(inv(10.42, 10.74, t)) * (1 - 0.06 * pulse(t, 10.74, 0.02, 0.2)));
+    world.setSala2Doors(ease.outBack(inv(DOORS_HIT, DOORS_HIT + 0.32, t)) * (1 - 0.06 * pulse(t, DOORS_HIT + 0.32, 0.02, 0.2)));
   }
 
   // ================================================================ block 2 · SALA 2
-  const beats = [];
-  {
-    // the heart finds its rhythm: slow and far apart at first
-    let b = PULSE_BACK;
-    const gaps = [1.02, 0.84, 0.76, 0.72, 0.7];
-    let i = 0;
-    while (b < B3 + 1) {
-      beats.push(b);
-      b += gaps[Math.min(i++, gaps.length - 1)];
-    }
-  }
+  const beats = HEART;
   const compress = (t) => 0.5 - 0.5 * Math.cos(t * TAU * 1.9); // 0 up .. 1 down, ~114 per minute
 
   function block2(t) {
@@ -1024,7 +1003,7 @@ export function createDirector({ engine, kit, scene, world, outside, cast, pov }
     yaw += walk * 0.004 * Math.sin(t * TAU * 0.9 + 1.0) + runK * 0.012 * Math.sin(t * TAU * 1.5 + 0.7);
     // jolts: the two shocks, the doors, the small tremor when the radio speaks in the alley
     const shock = Math.max(pulse(t, SHOCK1, 0.015, 0.075), pulse(t, SHOCK2, 0.015, 0.075));
-    const bang = pulse(t, 10.42, 0.02, 0.1);
+    const bang = pulse(t, DOORS_HIT, 0.02, 0.1);
     const tremor = 0.22 * ramp(S(51), S(51) + 0.2, t) * (1 - ramp(E(51) - 0.3, E(51), t));
     const j = shock * 1.0 + bang * 0.7 + tremor;
     if (j > 0.002) {

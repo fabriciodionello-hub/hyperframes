@@ -6,6 +6,9 @@
     "dev": "npx --yes hyperframes@0.9.26 preview",
     "check": "npx --yes hyperframes@0.9.26 check",
     "render": "npx --yes hyperframes@0.9.26 render",
-    "publish": "npx --yes hyperframes@0.9.26 publish"
+    "publish": "npx --yes hyperframes@0.9.26 publish",
+    "captions": "node tools/build_captions.mjs",
+    "audio": "python3 tools/build_audio.py assets/audio/narracao_original.mp3",
+    "render:local": "tools/x.sh tools/render.cjs --out renders/parte1_o_plantao.mp4"
   }
 }
